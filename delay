@@ -1,0 +1,77 @@
+#!/bin/bash
+
+DELAY=0.5
+MAXLINE=0
+SHOW_HELP=0
+FIRST=0
+
+for i in "$@"
+do
+  case $i in
+    -d=*|--delay=*)
+      DELAY="${i#*=}"
+      ;;
+    -l=*|--line=*)
+      MAXLINE="${i#*=}"
+      ;;
+    -s=*|--per-seconds=*)
+      VAR="${i#*=}"
+      if [[ $VAR -eq 0 ]]; then
+        echo "divide by 0"
+        exit 1
+      fi
+      DELAY=$(echo "scale=3; 1/$VAR" | bc)
+      ;;
+    -m=*|--per-minutes=*)
+      VAR="${i#*=}"
+      if [[ $VAR -eq 0 ]]; then
+        echo "divide by 0"
+        exit 1
+      fi
+      DELAY=$(echo "scale=3; 60/$VAR" | bc)
+      ;;
+    -f=*|--first=*)
+      FIRST="${i#*=}"
+      ;;
+    -h|--help)
+      SHOW_HELP=1
+      ;;
+    *)
+      ;;
+  esac
+done
+
+if [[ $SHOW_HELP -eq 1 ]]; then
+  echo Usage:
+  echo
+  echo "-d=0.1,  --delay=0.1       delay each line with 0.1 seconds"
+  echo "-f=1000, --first=1000      start on line 1000"
+  echo "-l=1000, --line=1000       maximum 1000 lines"
+  echo "-s=10,   --per-seconds=10  delay each line with 0.1 seconds / 10 line per seconds"
+  echo "-m=60,   --per-minutes=60  delay each line with 1 seconds / 60 line per minutes"
+  echo
+  echo "-h,      --help            display this help and working parameters"
+  echo
+  echo DELAY   = $DELAY
+  echo MAXLINE = $MAXLINE
+  echo
+  exit 0
+fi
+
+count=0
+index=0
+while read line
+do
+  ((index++))
+  if [[ $FIRST -gt $index ]]; then
+    continue
+  fi
+
+  sleep $DELAY
+  ((count++))
+  if [[ $MAXLINE -ne 0 && $count -gt $MAXLINE ]]; then
+    break
+  fi
+  echo $line
+done
+
